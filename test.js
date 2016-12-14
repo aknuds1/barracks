@@ -245,6 +245,14 @@ tape('api: send(name, data?)', (t) => {
     const send = createSend('test')
     t.throws(send.bind(null, 123), /string/, 'non-string should throw')
   })
+
+  t.test('should validate action name', (t) => {
+    t.plan(1)
+    const store = barracks()
+    const createSend = store.start()
+    const send = createSend('test')
+    t.throws(send, 'namespace:test', 'Could not find action namespace:test')
+  })
 })
 
 tape('api: stop()', (t) => {

@@ -212,49 +212,50 @@ function dispatcher (hooks) {
       assert.equal(typeof caller, 'string', 'barracks._send: caller should be a string')
       assert.equal(typeof cb, 'function', 'barracks._send: cb should be a function')
 
+      // validate if a namespace exists. Namespaces are delimited by ':'.
+      var actionName = name
+      if (/:/.test(name)) {
+        var arr = name.split(':')
+        var ns = arr.shift()
+        actionName = arr.join(':')
+      }
+
+      var isNamespaced = !!ns
+      var _reducers = isNamespaced ? reducers[ns] : reducers
+      var _effects = isNamespaced ? effects[ns] : effects
+      var reducer, effect
+      if (_reducers && _reducers[actionName]) {
+        reducer = _reducers[actionName]
+      } else if (_effects && _effects[actionName]) {
+        effect = _effects[actionName]
+      } else {
+        const qualifiedActionName = isNamespaced ? ns + ':' + actionName : actionName
+        throw new Error('Could not find action \'' + qualifiedActionName + '\'')
+      }
+
       ;(tick(function () {
-        var reducersCalled = false
-        var effectsCalled = false
         var newState = xtend(_state)
 
         if (onActionHooks.length) {
           applyHook(onActionHooks, _state, data, name, caller, createSend)
         }
 
-        // validate if a namespace exists. Namespaces are delimited by ':'.
-        var actionName = name
-        if (/:/.test(name)) {
-          var arr = name.split(':')
-          var ns = arr.shift()
-          actionName = arr.join(':')
-        }
-
-        var _reducers = ns ? reducers[ns] : reducers
-        if (_reducers && _reducers[actionName]) {
-          if (ns) {
-            var reducedState = _reducers[actionName](_state[ns], data)
-            newState[ns] = xtend(_state[ns], reducedState)
+        const qualifiedState = isNamespaced ? _state[ns] : _state
+        if (reducer) {
+          var reducedState = reducer(qualifiedState, data)
+          if (isNamespaced) {
+            newState[ns] = xtend(qualifiedState, reducedState)
           } else {
-            mutate(newState, reducers[actionName](_state, data))
+            mutate(newState, reducedState)
           }
-          reducersCalled = true
           if (onStateChangeHooks.length) {
             applyHook(onStateChangeHooks, newState, data, _state, actionName, createSend)
           }
           _state = newState
           cb(null, newState)
-        }
-
-        var _effects = ns ? effects[ns] : effects
-        if (!reducersCalled && _effects && _effects[actionName]) {
+        } else {
           var send = createSend('effect: ' + name)
-          if (ns) _effects[actionName](_state[ns], data, send, cb)
-          else _effects[actionName](_state, data, send, cb)
-          effectsCalled = true
-        }
-
-        if (!reducersCalled && !effectsCalled) {
-          throw new Error('Could not find action ' + actionName)
+          effect(qualifiedState, data, send, cb)
         }
       }))()
     }
