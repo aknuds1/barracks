@@ -137,6 +137,17 @@ tape('api: createSend = store.start(opts)', (t) => {
     const subscriptions = Object.keys(store._subscriptions)
     t.deepEqual(subscriptions.length, 0, 'no subscriptions registered')
   })
+
+  t.test('opts.subscriptions = true should register subs after initial call with subs disabled',
+  (t) => {
+    t.plan(1)
+    const store = barracks()
+    store.model({ subscriptions: { foo: noop } })
+    store.start({ subscriptions: false })
+    store.start()
+    const subscriptions = Object.keys(store._subscriptions)
+    t.deepEqual(subscriptions.length, 1, 'subscriptions registered')
+  })
 })
 
 tape('api: state = store.state()', (t) => {

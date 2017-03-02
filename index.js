@@ -160,7 +160,7 @@ function dispatcher (hooks) {
       _state = wrapHook(_state, initialStateWraps)
     }
 
-    if (!opts.noSubscriptions) subsCalled = true
+    if (opts.subscriptions !== false) subsCalled = true
     if (!opts.noReducers) reducersCalled = true
     if (!opts.noEffects) effectsCalled = true
     if (!opts.noState) stateCalled = true
