@@ -33,7 +33,8 @@ store.model({
   subscriptions: {}
 })
 
-const createSend = store.start({ subscriptions: true })
+// Don't fire subscriptions yet
+const createSend = store.start({ subscriptions: false })
 const send = createSend('myDispatcher', true)
 document.addEventListener('DOMContentLoaded', () => {
   store.start() // fire up subscriptions
